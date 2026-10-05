@@ -1,0 +1,14 @@
+# Ignorar archivos de configuración de Go en cualquier carpeta
+go.work
+go.work.sum
+go.mod
+go.sum
+
+# Ignorar archivos comprimidos locales
+*.zip
+
+# Ignorar trabajos individuales pasados
+tdas/cola/
+tdas/pila/
+tp1/
+tps/
