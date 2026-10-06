@@ -1,14 +1,18 @@
-# Ignorar archivos de configuración de Go en cualquier carpeta
+Ignorar archivos de configuración de Go en cualquier carpeta
 go.work
 go.work.sum
 go.mod
 go.sum
+.vscode/
 
-# Ignorar archivos comprimidos locales
+Ignorar archivos comprimidos locales
 *.zip
 
-# Ignorar trabajos individuales pasados
+Ignorar trabajos individuales pasados
+tdas/abb/
+tdas/heap/
 tdas/cola/
 tdas/pila/
-tp1/
 tps/
+tp1/
+guia/
