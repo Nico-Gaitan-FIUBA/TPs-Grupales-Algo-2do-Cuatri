@@ -58,9 +58,8 @@ func (lista *listaEnlazada[T]) BorrarPrimero() T {
 
 	datoBorrado := lista.primero.dato
 	lista.primero = lista.primero.siguiente
-	if lista.largo == 1 {
-		lista.primero = nil
-		lista.ultimo = nil
+	if lista.EstaVacia() {
+		lista.ultimo = lista.primero
 	}
 
 	lista.largo--
@@ -126,7 +125,7 @@ func (iter *iteradorLista[T]) Insertar(dato T) {
 		iter.anterior.siguiente = nuevoNodo
 	}
 
-	if iter.actual == nil {
+	if !iter.HayAlgoMas() {
 		iter.lista.ultimo = nuevoNodo
 	}
 	iter.actual = nuevoNodo
