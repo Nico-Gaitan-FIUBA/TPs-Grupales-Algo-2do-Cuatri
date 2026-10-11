@@ -1,6 +1,7 @@
 package diccionario
 
 import (
+	"fmt"
 	TDALista "tdas/lista"
 )
 
@@ -49,28 +50,9 @@ func jenkinsHash(clave string, largo int) uint32 {
 
 	return hash % uint32(largo)
 }
-func CrearHash[K comparable, V any]() Diccionario[K, V] {
-	return &hashAbierto[K, V]{
-		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], TAM_INICIAL),
-		tam:      TAM_INICIAL,
-		cantidad: CANTIDAD_INICIAL,
-	}
-}
 
-func jenkinsHash(clave string, largo int) uint32 {
-	var hash uint32 = 0
-
-	for i := 0; i < len(clave); i++ {
-		hash += uint32(clave[i])
-		hash += hash << 10
-		hash ^= hash >> 6
-	}
-
-	hash += hash << 3
-	hash ^= hash >> 11
-	hash += hash << 15
-
-	return hash % uint32(largo)
+func convertirABytes[K comparable](clave K) []byte {
+	return []byte(fmt.Sprintf("%v", clave))
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
