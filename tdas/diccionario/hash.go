@@ -55,24 +55,52 @@ func convertirABytes[K comparable](clave K) []byte {
 	return []byte(fmt.Sprintf("%v", clave))
 }
 
+func (h *hashAbierto[K, V]) buscarParClaveValor(clave K) *parClaveValor[K, V] {
+	claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
+	iterador := h.tabla[claveHasheada].Iterador()
+	for iterador.HayAlgoMas() {
+		actual := iterador.VerActual()
+		if actual.clave == clave {
+			return &actual
+		}
+	}
+	return nil
+}
+
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
-	return
+	if h.Pertenece(clave) {
+		puntero := h.buscarParClaveValor(clave)
+		puntero.valor = dato
+	} else {
+		claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
+		h.tabla[claveHasheada].InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
+		h.cantidad++
+		// if //algo {
+		// 	h.redimensionar()
+		// }
+	}
 }
+
 func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
-	return
+	return h.buscarParClaveValor(clave) != nil
 }
+
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
 	return
 }
+
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
 	return
 }
+
 func (h *hashAbierto[K, V]) Cantidad() int {
-	return
+	return h.cantidad
 }
+
 func (h *hashAbierto[K, V]) Iterar(func(clave K, dato V) bool) {
 	return
 }
+
 func (h *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
 	return
 }
