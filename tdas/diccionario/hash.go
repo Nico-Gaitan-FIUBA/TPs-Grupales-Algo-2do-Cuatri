@@ -8,6 +8,8 @@ import (
 const (
 	TAM_INICIAL      = 11
 	CANTIDAD_INICIAL = 0
+	CAPACIDAD_MINIMA = 2.0
+	CAPACIDAD_MAXIMA = 3.0
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -55,41 +57,81 @@ func convertirABytes[K comparable](clave K) []byte {
 	return []byte(fmt.Sprintf("%v", clave))
 }
 
-func (h *hashAbierto[K, V]) buscarParClaveValor(clave K) *parClaveValor[K, V] {
+func (h *hashAbierto[K, V]) buscarClaveYLista(clave K) (int, TDALista.Lista[parClaveValor[K, V]]) {
 	claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
-	iterador := h.tabla[claveHasheada].Iterador()
-	for iterador.HayAlgoMas() {
-		actual := iterador.VerActual()
-		if actual.clave == clave {
-			return &actual
+	return int(claveHasheada), h.tabla[int(claveHasheada)]
+}
+
+func (h *hashAbierto[K, V]) existeLaLista(lista TDALista.Lista[parClaveValor[K, V]]) bool {
+	return lista == nil
+}
+
+func (h *hashAbierto[K, V]) actualizarValor(clave K, dato V, lista TDALista.Lista[parClaveValor[K, V]]) {
+	for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
+		if iter.VerActual().clave == clave {
+			iter.Borrar()
+			iter.Insertar(parClaveValor[K, V]{clave: clave, valor: dato})
 		}
 	}
-	return nil
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
-	if h.Pertenece(clave) {
-		puntero := h.buscarParClaveValor(clave)
-		puntero.valor = dato
-	} else {
-		claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
-		h.tabla[claveHasheada].InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
-		h.cantidad++
-		// if //algo {
-		// 	h.redimensionar()
-		// }
+	claveHasheada, lista := h.buscarClaveYLista(clave)
+
+	if !h.existeLaLista(lista) {
+		lista = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
+		h.tabla[claveHasheada] = lista
 	}
+
+	if h.Pertenece(clave) {
+		h.actualizarValor(clave, dato, lista)
+		return
+	} else {
+		lista.InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
+		h.cantidad++
+	}
+	// if //algo {
+	// 	h.redimensionar()
+	// }
 }
 
+// func (h *hashAbierto[K, V]) buscarParClaveValor(clave K) parClaveValor[K, V] {
+// 	claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
+// 	iterador := h.tabla[claveHasheada].Iterador()
+// 	for iterador.HayAlgoMas() {
+// 		actual := iterador.VerActual()
+// 		if actual.clave == clave {
+// 			return &actual
+// 		}
+// 	}
+// 	return nil
+// }
+
 func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
-	return h.buscarParClaveValor(clave) != nil
+	_, lista := h.buscarClaveYLista(clave)
+
+	if !h.existeLaLista(lista) {
+		return false
+	}
+	for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
+		if iter.VerActual().clave == clave {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
+	if !h.Pertenece(clave) {
+		panic("La clave no pertenece al diccionario")
+	}
 	return
 }
 
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
+	if !h.Pertenece(clave) {
+		panic("La clave no pertenece al diccionario")
+	}
 	return
 }
 
