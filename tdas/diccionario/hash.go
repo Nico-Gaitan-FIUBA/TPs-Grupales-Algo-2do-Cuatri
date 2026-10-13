@@ -132,6 +132,11 @@ func (h *hashAbierto[K, V]) Borrar(clave K) V {
 	if !h.Pertenece(clave) {
 		panic("La clave no pertenece al diccionario")
 	}
+
+	h.cantidad--
+	// if //algo {
+	// 	h.redimensionar()
+	// }
 	return
 }
 
