@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	TAM_INICIAL      = 11
-	CANTIDAD_INICIAL = 0
-	CAPACIDAD_MINIMA = 2.0
-	CAPACIDAD_MAXIMA = 3.0
+	TAM_INICIAL            = 11
+	CANTIDAD_INICIAL       = 0
+	FACTOR_DE_CARGA_MINIMO = 2
+	FACTOR_DE_CARGA_MAXIMO = 3
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -75,6 +75,14 @@ func (h *hashAbierto[K, V]) actualizarValor(clave K, dato V, lista TDALista.List
 	}
 }
 
+func (h *hashAbierto[K, V]) redimensionar() {
+
+}
+
+func (h *hashAbierto[K, V]) calcularFactorDeCarga() float64 {
+	return float64(h.cantidad) / float64(h.tam)
+}
+
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 	claveHasheada, lista := h.buscarClaveYLista(clave)
 
@@ -90,22 +98,11 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 		lista.InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
 		h.cantidad++
 	}
-	// if //algo {
-	// 	h.redimensionar()
-	// }
+	condicionParaRedimension := float64(FACTOR_DE_CARGA_MINIMO) <= h.calcularFactorDeCarga() && float64(FACTOR_DE_CARGA_MAXIMO) >= h.calcularFactorDeCarga()
+	if condicionParaRedimension {
+		h.redimensionar()
+	}
 }
-
-// func (h *hashAbierto[K, V]) buscarParClaveValor(clave K) parClaveValor[K, V] {
-// 	claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
-// 	iterador := h.tabla[claveHasheada].Iterador()
-// 	for iterador.HayAlgoMas() {
-// 		actual := iterador.VerActual()
-// 		if actual.clave == clave {
-// 			return &actual
-// 		}
-// 	}
-// 	return nil
-// }
 
 func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 	_, lista := h.buscarClaveYLista(clave)
@@ -122,10 +119,17 @@ func (h *hashAbierto[K, V]) Pertenece(clave K) bool {
 }
 
 func (h *hashAbierto[K, V]) Obtener(clave K) V {
-	if !h.Pertenece(clave) {
+	_, lista := h.buscarClaveYLista(clave)
+
+	if !h.existeLaLista(lista) {
 		panic("La clave no pertenece al diccionario")
 	}
-	return
+	for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
+		if iter.VerActual().clave == clave {
+			return iter.VerActual().valor
+		}
+	}
+	panic("La clave no pertenece al diccionario")
 }
 
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
