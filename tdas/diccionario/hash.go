@@ -10,6 +10,8 @@ const (
 	CANTIDAD_INICIAL       = 0
 	FACTOR_DE_CARGA_MINIMO = 2
 	FACTOR_DE_CARGA_MAXIMO = 3
+	OCUPACION_MINIMA       = 0.25
+	FACTOR_DE_REDIMENSION  = 2
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -79,10 +81,6 @@ func (h *hashAbierto[K, V]) redimensionar() {
 
 }
 
-func (h *hashAbierto[K, V]) calcularFactorDeCarga() float64 {
-	return float64(h.cantidad) / float64(h.tam)
-}
-
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 	claveHasheada, lista := h.buscarClaveYLista(clave)
 
@@ -98,7 +96,9 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 		lista.InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
 		h.cantidad++
 	}
-	condicionParaRedimension := float64(FACTOR_DE_CARGA_MINIMO) <= h.calcularFactorDeCarga() && float64(FACTOR_DE_CARGA_MAXIMO) >= h.calcularFactorDeCarga()
+	condicionParaRedimension := float64(FACTOR_DE_CARGA_MINIMO) <= float64(h.cantidad)/float64(h.tam) &&
+		float64(FACTOR_DE_CARGA_MAXIMO) >= float64(h.cantidad)/float64(h.tam)
+
 	if condicionParaRedimension {
 		h.redimensionar()
 	}
@@ -133,15 +133,23 @@ func (h *hashAbierto[K, V]) Obtener(clave K) V {
 }
 
 func (h *hashAbierto[K, V]) Borrar(clave K) V {
-	if !h.Pertenece(clave) {
+	_, lista := h.buscarClaveYLista(clave)
+	if !h.existeLaLista(lista) {
 		panic("La clave no pertenece al diccionario")
 	}
-
-	h.cantidad--
-	// if //algo {
-	// 	h.redimensionar()
-	// }
-	return
+	for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
+		if iter.VerActual().clave == clave {
+			borrado := iter.VerActual().valor
+			iter.Borrar()
+			h.cantidad--
+			condicionParaRedimension := float64(h.cantidad) == float64(h.tam)*OCUPACION_MINIMA && h.tam/FACTOR_DE_REDIMENSION >= TAM_INICIAL
+			if condicionParaRedimension {
+				h.redimensionar()
+			}
+			return borrado
+		}
+	}
+	panic("La clave no pertenece al diccionario")
 }
 
 func (h *hashAbierto[K, V]) Cantidad() int {
