@@ -77,8 +77,22 @@ func (h *hashAbierto[K, V]) actualizarValor(clave K, dato V, lista TDALista.List
 	}
 }
 
-func (h *hashAbierto[K, V]) redimensionar() {
-
+func (h *hashAbierto[K, V]) redimensionar(tamanio int) {
+	nuevaTabla := make([]TDALista.Lista[parClaveValor[K, V]], tamanio)
+	for _, lista := range h.tabla {
+		if h.existeLaLista(lista) {
+			for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
+				elem := iter.VerActual()
+				claveHasheada := jenkinsHash(string(convertirABytes(elem.clave)), tamanio)
+				if nuevaTabla[claveHasheada] == nil {
+					nuevaTabla[claveHasheada] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
+				}
+				nuevaTabla[claveHasheada].InsertarUltimo(elem)
+			}
+		}
+	}
+	h.tabla = nuevaTabla
+	h.tam = tamanio
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
@@ -100,7 +114,7 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 		float64(FACTOR_DE_CARGA_MAXIMO) >= float64(h.cantidad)/float64(h.tam)
 
 	if condicionParaRedimension {
-		h.redimensionar()
+		h.redimensionar(h.tam * FACTOR_DE_REDIMENSION)
 	}
 }
 
@@ -144,7 +158,7 @@ func (h *hashAbierto[K, V]) Borrar(clave K) V {
 			h.cantidad--
 			condicionParaRedimension := float64(h.cantidad) == float64(h.tam)*OCUPACION_MINIMA && h.tam/FACTOR_DE_REDIMENSION >= TAM_INICIAL
 			if condicionParaRedimension {
-				h.redimensionar()
+				h.redimensionar(h.tam * FACTOR_DE_REDIMENSION)
 			}
 			return borrado
 		}
