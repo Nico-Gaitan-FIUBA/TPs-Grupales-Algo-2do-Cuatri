@@ -28,7 +28,7 @@ type hashAbierto[K comparable, V any] struct {
 type iterDiccionario[K comparable, V any] struct {
 	tabla       *hashAbierto[K, V]
 	actualHash  int
-	actualLista TDALista.IteradorLista[parClaveValor[K, V]]
+	listaActual TDALista.IteradorLista[parClaveValor[K, V]]
 }
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
@@ -37,6 +37,26 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 		tam:      TAM_INICIAL,
 		cantidad: CANTIDAD_INICIAL,
 	}
+}
+
+func (h *hashAbierto[K, V]) crearIteradorExterno() IterDiccionario[K, V] {
+	iterador := &iterDiccionario[K, V]{tabla: h}
+	for _, lista := range h.tabla {
+		if !h.existeLaLista(lista) {
+			iterador.actualHash++
+			if iterador.actualHash >= h.tam {
+				iterador.actualHash = h.tam
+				break
+			}
+		} else {
+			iterador.listaActual = h.tabla[iterador.actualHash].Iterador()
+			if iterador.listaActual.HayAlgoMas() {
+				break
+			}
+			iterador.actualHash++
+		}
+	}
+	return iterador
 }
 
 func jenkinsHash(clave string, largo int) uint32 {
@@ -65,7 +85,7 @@ func (h *hashAbierto[K, V]) buscarClaveYLista(clave K) (int, TDALista.Lista[parC
 }
 
 func (h *hashAbierto[K, V]) existeLaLista(lista TDALista.Lista[parClaveValor[K, V]]) bool {
-	return lista == nil
+	return lista != nil
 }
 
 func (h *hashAbierto[K, V]) actualizarValor(clave K, dato V, lista TDALista.Lista[parClaveValor[K, V]]) {
@@ -93,6 +113,15 @@ func (h *hashAbierto[K, V]) redimensionar(tamanio int) {
 	}
 	h.tabla = nuevaTabla
 	h.tam = tamanio
+}
+
+func (h *hashAbierto[K, V]) buscarActualHash() int {
+	for pos, lista := range h.tabla {
+		if h.existeLaLista(lista) {
+			return pos
+		}
+	}
+	return -1
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
@@ -170,10 +199,51 @@ func (h *hashAbierto[K, V]) Cantidad() int {
 	return h.cantidad
 }
 
-func (h *hashAbierto[K, V]) Iterar(func(clave K, dato V) bool) {
-	return
+func (h *hashAbierto[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	debeContinuar := true
+	for i := 0; i < h.tam && debeContinuar; i++ {
+		lista := h.tabla[i]
+		if h.existeLaLista(lista) {
+			lista.Iterar(func(par parClaveValor[K, V]) bool {
+				if !visitar(par.clave, par.valor) {
+					debeContinuar = false
+				}
+				return debeContinuar
+			})
+		}
+	}
 }
 
 func (h *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
-	return
+	return h.crearIteradorExterno()
+}
+
+func (i *iterDiccionario[K, V]) HayAlgoMas() bool {
+	return i.actualHash < i.tabla.tam
+}
+
+func (i *iterDiccionario[K, V]) VerActual() (K, V) {
+	if !i.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+	return i.listaActual.VerActual().clave, i.listaActual.VerActual().valor
+}
+
+func (i *iterDiccionario[K, V]) Avanzar() {
+	if !i.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+
+	i.listaActual.Avanzar()
+
+	for !i.listaActual.HayAlgoMas() {
+		i.actualHash++
+		if i.actualHash >= i.tabla.tam {
+			break
+		}
+		lista := i.tabla.tabla[i.actualHash]
+		if lista != nil {
+			i.listaActual = lista.Iterador()
+		}
+	}
 }
