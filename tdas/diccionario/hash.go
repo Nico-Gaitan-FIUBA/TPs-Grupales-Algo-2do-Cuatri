@@ -7,8 +7,6 @@ import (
 
 const (
 	TAM_INICIAL            = 11
-	CANTIDAD_INICIAL       = 0
-	FACTOR_DE_CARGA_MINIMO = 2
 	FACTOR_DE_CARGA_MAXIMO = 3
 	OCUPACION_MINIMA       = 0.25
 	FACTOR_DE_REDIMENSION  = 2
@@ -26,36 +24,22 @@ type hashAbierto[K comparable, V any] struct {
 }
 
 type iterDiccionario[K comparable, V any] struct {
-	tabla       *hashAbierto[K, V]
-	actualHash  int
-	listaActual TDALista.IteradorLista[parClaveValor[K, V]]
+	tabla           *hashAbierto[K, V]
+	posTabla        int
+	iterListaActual TDALista.IteradorLista[parClaveValor[K, V]]
 }
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &hashAbierto[K, V]{
 		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], TAM_INICIAL),
 		tam:      TAM_INICIAL,
-		cantidad: CANTIDAD_INICIAL,
+		cantidad: 0,
 	}
 }
 
 func (h *hashAbierto[K, V]) crearIteradorExterno() IterDiccionario[K, V] {
 	iterador := &iterDiccionario[K, V]{tabla: h}
-	for _, lista := range h.tabla {
-		if !h.existeLaLista(lista) {
-			iterador.actualHash++
-			if iterador.actualHash >= h.tam {
-				iterador.actualHash = h.tam
-				break
-			}
-		} else {
-			iterador.listaActual = h.tabla[iterador.actualHash].Iterador()
-			if iterador.listaActual.HayAlgoMas() {
-				break
-			}
-			iterador.actualHash++
-		}
-	}
+	iterador.buscarListaValida()
 	return iterador
 }
 
@@ -115,15 +99,6 @@ func (h *hashAbierto[K, V]) redimensionar(tamanio int) {
 	h.tam = tamanio
 }
 
-func (h *hashAbierto[K, V]) buscarActualHash() int {
-	for pos, lista := range h.tabla {
-		if h.existeLaLista(lista) {
-			return pos
-		}
-	}
-	return -1
-}
-
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 	claveHasheada, lista := h.buscarClaveYLista(clave)
 
@@ -139,10 +114,8 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 		lista.InsertarUltimo(parClaveValor[K, V]{clave: clave, valor: dato})
 		h.cantidad++
 	}
-	condicionParaRedimension := float64(FACTOR_DE_CARGA_MINIMO) <= float64(h.cantidad)/float64(h.tam) &&
-		float64(FACTOR_DE_CARGA_MAXIMO) >= float64(h.cantidad)/float64(h.tam)
 
-	if condicionParaRedimension {
+	if float64(FACTOR_DE_CARGA_MAXIMO) <= float64(h.cantidad)/float64(h.tam) {
 		h.redimensionar(h.tam * FACTOR_DE_REDIMENSION)
 	}
 }
@@ -185,9 +158,8 @@ func (h *hashAbierto[K, V]) Borrar(clave K) V {
 			borrado := iter.VerActual().valor
 			iter.Borrar()
 			h.cantidad--
-			condicionParaRedimension := float64(h.cantidad) == float64(h.tam)*OCUPACION_MINIMA && h.tam/FACTOR_DE_REDIMENSION >= TAM_INICIAL
-			if condicionParaRedimension {
-				h.redimensionar(h.tam * FACTOR_DE_REDIMENSION)
+			if float64(h.cantidad) <= float64(h.tam)*OCUPACION_MINIMA && h.tam/FACTOR_DE_REDIMENSION >= TAM_INICIAL {
+				h.redimensionar(h.tam / FACTOR_DE_REDIMENSION)
 			}
 			return borrado
 		}
@@ -219,14 +191,14 @@ func (h *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
 }
 
 func (i *iterDiccionario[K, V]) HayAlgoMas() bool {
-	return i.actualHash < i.tabla.tam
+	return i.posTabla < i.tabla.tam
 }
 
 func (i *iterDiccionario[K, V]) VerActual() (K, V) {
 	if !i.HayAlgoMas() {
 		panic("El iterador termino de iterar")
 	}
-	return i.listaActual.VerActual().clave, i.listaActual.VerActual().valor
+	return i.iterListaActual.VerActual().clave, i.iterListaActual.VerActual().valor
 }
 
 func (i *iterDiccionario[K, V]) Avanzar() {
@@ -234,16 +206,32 @@ func (i *iterDiccionario[K, V]) Avanzar() {
 		panic("El iterador termino de iterar")
 	}
 
-	i.listaActual.Avanzar()
+	i.iterListaActual.Avanzar()
+	if !i.iterListaActual.HayAlgoMas() {
+		i.posTabla++
+		i.buscarListaValida()
+	}
 
-	for !i.listaActual.HayAlgoMas() {
-		i.actualHash++
-		if i.actualHash >= i.tabla.tam {
+}
+
+func (iter *iterDiccionario[K, V]) buscarListaValida() {
+
+	for iter.posTabla < iter.tabla.tam {
+
+		if iter.tabla.existeLaLista(iter.tabla.tabla[iter.posTabla]) {
+			iterador := iter.tabla.tabla[iter.posTabla].Iterador()
+
+			if iterador.HayAlgoMas() {
+				iter.iterListaActual = iterador
+				break
+			}
+		}
+
+		iter.posTabla++
+		if iter.posTabla >= iter.tabla.tam {
 			break
 		}
-		lista := i.tabla.tabla[i.actualHash]
-		if lista != nil {
-			i.listaActual = lista.Iterador()
-		}
+
 	}
+
 }
