@@ -19,7 +19,6 @@ type parClaveValor[K comparable, V any] struct {
 
 type hashAbierto[K comparable, V any] struct {
 	tabla    []TDALista.Lista[parClaveValor[K, V]]
-	tam      int
 	cantidad int
 }
 
@@ -32,7 +31,6 @@ type iterDiccionario[K comparable, V any] struct {
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &hashAbierto[K, V]{
 		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], TAM_INICIAL),
-		tam:      TAM_INICIAL,
 		cantidad: 0,
 	}
 }
@@ -64,7 +62,7 @@ func convertirABytes[K comparable](clave K) []byte {
 }
 
 func (h *hashAbierto[K, V]) buscarClaveYLista(clave K) (int, TDALista.Lista[parClaveValor[K, V]]) {
-	claveHasheada := jenkinsHash(string(convertirABytes(clave)), h.tam)
+	claveHasheada := jenkinsHash(string(convertirABytes(clave)), len(h.tabla))
 	return int(claveHasheada), h.tabla[int(claveHasheada)]
 }
 
@@ -96,7 +94,6 @@ func (h *hashAbierto[K, V]) redimensionar(tamanio int) {
 		}
 	}
 	h.tabla = nuevaTabla
-	h.tam = tamanio
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
@@ -115,8 +112,8 @@ func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
 		h.cantidad++
 	}
 
-	if float64(FACTOR_DE_CARGA_MAXIMO) <= float64(h.cantidad)/float64(h.tam) {
-		h.redimensionar(h.tam * FACTOR_DE_REDIMENSION)
+	if float64(FACTOR_DE_CARGA_MAXIMO) <= float64(h.cantidad)/float64(len(h.tabla)) {
+		h.redimensionar(len(h.tabla) * FACTOR_DE_REDIMENSION)
 	}
 }
 
@@ -158,8 +155,8 @@ func (h *hashAbierto[K, V]) Borrar(clave K) V {
 			borrado := iter.VerActual().valor
 			iter.Borrar()
 			h.cantidad--
-			if float64(h.cantidad) <= float64(h.tam)*OCUPACION_MINIMA && h.tam/FACTOR_DE_REDIMENSION >= TAM_INICIAL {
-				h.redimensionar(h.tam / FACTOR_DE_REDIMENSION)
+			if float64(h.cantidad) <= float64(len(h.tabla))*OCUPACION_MINIMA && len(h.tabla)/FACTOR_DE_REDIMENSION >= TAM_INICIAL {
+				h.redimensionar(len(h.tabla) / FACTOR_DE_REDIMENSION)
 			}
 			return borrado
 		}
@@ -173,7 +170,7 @@ func (h *hashAbierto[K, V]) Cantidad() int {
 
 func (h *hashAbierto[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 	debeContinuar := true
-	for i := 0; i < h.tam && debeContinuar; i++ {
+	for i := 0; i < len(h.tabla) && debeContinuar; i++ {
 		lista := h.tabla[i]
 		if h.existeLaLista(lista) {
 			lista.Iterar(func(par parClaveValor[K, V]) bool {
@@ -191,7 +188,7 @@ func (h *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
 }
 
 func (i *iterDiccionario[K, V]) HayAlgoMas() bool {
-	return i.posTabla < i.tabla.tam
+	return i.posTabla < len(i.tabla.tabla)
 }
 
 func (i *iterDiccionario[K, V]) VerActual() (K, V) {
@@ -216,7 +213,7 @@ func (i *iterDiccionario[K, V]) Avanzar() {
 
 func (iter *iterDiccionario[K, V]) buscarListaValida() {
 
-	for iter.posTabla < iter.tabla.tam {
+	for iter.posTabla < len(iter.tabla.tabla) {
 
 		if iter.tabla.existeLaLista(iter.tabla.tabla[iter.posTabla]) {
 			iterador := iter.tabla.tabla[iter.posTabla].Iterador()
@@ -228,7 +225,7 @@ func (iter *iterDiccionario[K, V]) buscarListaValida() {
 		}
 
 		iter.posTabla++
-		if iter.posTabla >= iter.tabla.tam {
+		if iter.posTabla >= len(iter.tabla.tabla) {
 			break
 		}
 
