@@ -28,9 +28,13 @@ type iterDiccionario[K comparable, V any] struct {
 	iterListaActual TDALista.IteradorLista[parClaveValor[K, V]]
 }
 
+func crearTabla[K comparable, V any](tam int) []TDALista.Lista[parClaveValor[K, V]] {
+	return make([]TDALista.Lista[parClaveValor[K, V]], tam)
+}
+
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &hashAbierto[K, V]{
-		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], TAM_INICIAL),
+		tabla:    crearTabla[K, V](TAM_INICIAL),
 		cantidad: 0,
 	}
 }
@@ -80,20 +84,21 @@ func (h *hashAbierto[K, V]) actualizarValor(clave K, dato V, lista TDALista.List
 }
 
 func (h *hashAbierto[K, V]) redimensionar(tamanio int) {
-	nuevaTabla := make([]TDALista.Lista[parClaveValor[K, V]], tamanio)
-	for _, lista := range h.tabla {
+
+	tablaAnterior := h.tabla
+
+	h.cantidad = 0
+
+	h.tabla = crearTabla[K, V](tamanio)
+	for _, lista := range tablaAnterior {
 		if h.existeLaLista(lista) {
 			for iter := lista.Iterador(); iter.HayAlgoMas(); iter.Avanzar() {
 				elem := iter.VerActual()
-				claveHasheada := jenkinsHash(string(convertirABytes(elem.clave)), tamanio)
-				if nuevaTabla[claveHasheada] == nil {
-					nuevaTabla[claveHasheada] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
-				}
-				nuevaTabla[claveHasheada].InsertarUltimo(elem)
+				h.Guardar(elem.clave, elem.valor)
 			}
 		}
 	}
-	h.tabla = nuevaTabla
+
 }
 
 func (h *hashAbierto[K, V]) Guardar(clave K, dato V) {
