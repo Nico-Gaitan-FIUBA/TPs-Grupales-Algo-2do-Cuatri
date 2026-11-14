@@ -34,26 +34,26 @@ func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdena
 	}
 }
 
-func (a *abb[K, V]) buscarNodoYPadre(claveDelNodoABuscar K, raiz *nodoAbb[K, V], padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
-	if raiz == nil {
+func (a *abb[K, V]) buscarNodoYPadre(claveDelNodoABuscar K, nodoActual *nodoAbb[K, V], padre *nodoAbb[K, V]) (*nodoAbb[K, V], *nodoAbb[K, V]) {
+	if nodoActual == nil {
 		return nil, padre
 	}
-	cmp := a.funcion_cmp(claveDelNodoABuscar, raiz.clave)
+	cmp := a.funcion_cmp(claveDelNodoABuscar, nodoActual.clave)
 
 	switch {
 	case cmp < 0:
-		return a.buscarNodoYPadre(claveDelNodoABuscar, raiz.izq, raiz)
+		return a.buscarNodoYPadre(claveDelNodoABuscar, nodoActual.izq, nodoActual)
 	case cmp > 0:
-		return a.buscarNodoYPadre(claveDelNodoABuscar, raiz.der, raiz)
+		return a.buscarNodoYPadre(claveDelNodoABuscar, nodoActual.der, nodoActual)
 	default:
-		return raiz, padre
+		return nodoActual, padre
 	}
 }
 
 func (a *abb[K, V]) Guardar(clave K, dato V) {
-	nodoAObtener, padre := a.buscarNodoYPadre(clave, a.raiz, nil)
+	nodo, padre := a.buscarNodoYPadre(clave, a.raiz, nil)
 
-	if nodoAObtener == nil {
+	if nodo == nil {
 		nuevoNodo := &nodoAbb[K, V]{clave: clave, dato: dato}
 		if a.raiz == nil {
 			a.raiz = nuevoNodo
@@ -64,23 +64,23 @@ func (a *abb[K, V]) Guardar(clave K, dato V) {
 		}
 		a.cant++
 	} else {
-		nodoAObtener.dato = dato
+		nodo.dato = dato
 	}
 }
 
 func (a *abb[K, V]) Pertenece(clave K) bool {
-	nodoAObtener, _ := a.buscarNodoYPadre(clave, a.raiz, nil)
+	nodo, _ := a.buscarNodoYPadre(clave, a.raiz, nil)
 
-	return nodoAObtener != nil
+	return nodo != nil
 }
 
 func (a *abb[K, V]) Obtener(clave K) V {
-	nodoAObtener, _ := a.buscarNodoYPadre(clave, a.raiz, nil)
+	nodo, _ := a.buscarNodoYPadre(clave, a.raiz, nil)
 
-	if nodoAObtener == nil {
+	if nodo == nil {
 		panic("La clave no pertenece al diccionario")
 	}
-	return nodoAObtener.dato
+	return nodo.dato
 }
 
 func (a *abb[K, V]) buscarReemplazo(inicio *nodoAbb[K, V]) *nodoAbb[K, V] {
