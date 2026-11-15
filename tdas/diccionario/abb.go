@@ -18,10 +18,10 @@ type abb[K comparable, V any] struct {
 }
 
 type iterDiccionarioAbb[K comparable, V any] struct {
-	pila  TDAPila.Pila[*nodoAbb[K, V]]
-	desde *K
-	hasta *K
-	arbol *abb[K, V]
+	pila        TDAPila.Pila[*nodoAbb[K, V]]
+	desde       *K
+	hasta       *K
+	funcion_cmp func(K, K) int
 }
 
 func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
@@ -141,40 +141,40 @@ func (a *abb[K, V]) Cantidad() int {
 
 func (a *abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 	if a.raiz != nil {
-		a.raiz.iterarRango(a, nil, nil, visitar)
+		a.raiz.iterarRango(a.funcion_cmp, nil, nil, visitar)
 	}
 }
 
 func (a *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
 	if a.raiz != nil {
-		a.raiz.iterarRango(a, desde, hasta, visitar)
+		a.raiz.iterarRango(a.funcion_cmp, desde, hasta, visitar)
 	}
 }
 
-func (nodo *nodoAbb[K, V]) iterarRango(arbol *abb[K, V], desde *K, hasta *K, visitar func(clave K, dato V) bool) bool {
+func (nodo *nodoAbb[K, V]) iterarRango(funcionDeComparacion func(K, K) int, desde *K, hasta *K, visitar func(clave K, dato V) bool) bool {
 
 	if nodo == nil {
 		return true
 	}
 
-	cumpleMayorADesde := desde == nil || arbol.funcion_cmp(nodo.clave, *desde) > 0
+	cumpleMayorADesde := desde == nil || funcionDeComparacion(nodo.clave, *desde) > 0
 	if cumpleMayorADesde {
-		if !nodo.izq.iterarRango(arbol, desde, hasta, visitar) {
+		if !nodo.izq.iterarRango(funcionDeComparacion, desde, hasta, visitar) {
 			return false
 		}
 	}
 
-	cumpleMayorOIgualADesde := desde == nil || arbol.funcion_cmp(nodo.clave, *desde) >= 0
-	cumpleMenorOIgualAHasta := hasta == nil || arbol.funcion_cmp(nodo.clave, *hasta) <= 0
+	cumpleMayorOIgualADesde := desde == nil || funcionDeComparacion(nodo.clave, *desde) >= 0
+	cumpleMenorOIgualAHasta := hasta == nil || funcionDeComparacion(nodo.clave, *hasta) <= 0
 	if (cumpleMayorOIgualADesde) && (cumpleMenorOIgualAHasta) {
 		if !visitar(nodo.clave, nodo.dato) {
 			return false
 		}
 	}
 
-	cumpleMenorAHasta := hasta == nil || arbol.funcion_cmp(nodo.clave, *hasta) < 0
+	cumpleMenorAHasta := hasta == nil || funcionDeComparacion(nodo.clave, *hasta) < 0
 	if cumpleMenorAHasta {
-		if !nodo.der.iterarRango(arbol, desde, hasta, visitar) {
+		if !nodo.der.iterarRango(funcionDeComparacion, desde, hasta, visitar) {
 			return false
 		}
 	}
@@ -186,11 +186,11 @@ func (i *iterDiccionarioAbb[K, V]) buscarNodoEnRango(nodo *nodoAbb[K, V]) {
 	if nodo == nil {
 		return
 	}
-	if i.hasta != nil && i.arbol.funcion_cmp(nodo.clave, *i.hasta) > 0 {
+	if i.hasta != nil && i.funcion_cmp(nodo.clave, *i.hasta) > 0 {
 		i.buscarNodoEnRango(nodo.izq)
 		return
 	}
-	if i.desde != nil && i.arbol.funcion_cmp(nodo.clave, *i.desde) < 0 {
+	if i.desde != nil && i.funcion_cmp(nodo.clave, *i.desde) < 0 {
 		i.buscarNodoEnRango(nodo.der)
 		return
 	}
@@ -205,10 +205,10 @@ func (a *abb[K, V]) Iterador() IterDiccionario[K, V] {
 
 func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	iterador := &iterDiccionarioAbb[K, V]{
-		pila:  TDAPila.CrearPilaDinamica[*nodoAbb[K, V]](),
-		desde: desde,
-		hasta: hasta,
-		arbol: a,
+		pila:        TDAPila.CrearPilaDinamica[*nodoAbb[K, V]](),
+		desde:       desde,
+		hasta:       hasta,
+		funcion_cmp: a.funcion_cmp,
 	}
 
 	if a.raiz != nil {
