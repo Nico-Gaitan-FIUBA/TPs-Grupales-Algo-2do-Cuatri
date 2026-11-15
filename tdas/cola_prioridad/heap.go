@@ -45,6 +45,53 @@ func HeapSort[T any](elementos []T, funcion_cmp cmp[T]) {
 	}
 }
 
+func (h *heap[T]) EstaVacia() bool {
+	return h.cantidad == 0
+}
+
+func (h *heap[T]) Encolar(elem T) {
+	if h.cantidad == len(h.cola) {
+		nuevoTam := len(h.cola) * FACTOR_REDIMENSION
+		h.redimensionar(nuevoTam)
+	}
+
+	h.cola[h.cantidad] = elem
+	h.cantidad++
+
+	upHeap(h.cola[:h.cantidad], h.funcion_cmp, elem, h.cantidad-1)
+
+}
+
+func (h *heap[T]) VerMax() T {
+	if h.EstaVacia() {
+		panic("La cola esta vacia")
+	}
+	return h.cola[0]
+}
+
+func (h *heap[T]) Desencolar() T {
+	if h.EstaVacia() {
+		panic("La cola esta vacia")
+	}
+
+	elemDesencolado := h.cola[0]
+	h.cantidad--
+
+	swap(h.cola, 0, h.cantidad)
+
+	downHeap(h.cola[:h.cantidad], h.funcion_cmp, 0)
+
+	if h.cantidad <= len(h.cola)/FACTOR_REDUCCION && len(h.cola) > TAM_INICIAL {
+		h.redimensionar(len(h.cola) / FACTOR_REDIMENSION)
+	}
+
+	return elemDesencolado
+}
+
+func (h *heap[T]) Cantidad() int {
+	return h.cantidad
+}
+
 func heapify[T any](cola []T, funcion_cmp cmp[T]) {
 	for i := len(cola)/2 - 1; i >= 0; i-- {
 		downHeap(cola, funcion_cmp, i)
@@ -98,51 +145,4 @@ func (h *heap[T]) redimensionar(tam int) {
 	nuevoSlice := make([]T, tam)
 	copy(nuevoSlice, h.cola[:h.cantidad])
 	h.cola = nuevoSlice
-}
-
-func (h *heap[T]) EstaVacia() bool {
-	return h.cantidad == 0
-}
-
-func (h *heap[T]) Encolar(elem T) {
-	if h.cantidad == len(h.cola) {
-		nuevoTam := len(h.cola) * FACTOR_REDIMENSION
-		h.redimensionar(nuevoTam)
-	}
-
-	h.cola[h.cantidad] = elem
-	h.cantidad++
-
-	upHeap(h.cola[:h.cantidad], h.funcion_cmp, elem, h.cantidad-1)
-
-}
-
-func (h *heap[T]) VerMax() T {
-	if h.EstaVacia() {
-		panic("La cola esta vacia")
-	}
-	return h.cola[0]
-}
-
-func (h *heap[T]) Desencolar() T {
-	if h.EstaVacia() {
-		panic("La cola esta vacia")
-	}
-
-	elemDesencolado := h.cola[0]
-	h.cantidad--
-
-	swap(h.cola, 0, h.cantidad)
-
-	downHeap(h.cola[:h.cantidad], h.funcion_cmp, 0)
-
-	if h.cantidad <= len(h.cola)/FACTOR_REDUCCION && len(h.cola) > TAM_INICIAL {
-		h.redimensionar(len(h.cola) / FACTOR_REDIMENSION)
-	}
-
-	return elemDesencolado
-}
-
-func (h *heap[T]) Cantidad() int {
-	return h.cantidad
 }
