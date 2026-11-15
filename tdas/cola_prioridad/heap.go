@@ -9,8 +9,9 @@ const (
 type heap[T any] struct {
 	cola        []T
 	cantidad    int
-	funcion_cmp func(T, T) int
+	funcion_cmp cmp[T]
 }
+type cmp[T any] func(T, T) int
 
 // La función de comparación, recibe dos claves y devuelve:
 
@@ -18,11 +19,11 @@ type heap[T any] struct {
 //     Un entero mayor que 0 si la primera clave es mayor que la segunda. --> positivo si 1era > 2da
 //     0 si ambas claves son iguales.
 
-func CrearHeap[T any](funcion_cmp func(T, T) int) ColaPrioridad[T] {
+func CrearHeap[T any](funcion_cmp cmp[T]) ColaPrioridad[T] {
 	return &heap[T]{cola: make([]T, TAM_INICIAL), cantidad: 0, funcion_cmp: funcion_cmp}
 }
 
-func CrearHeapArr[T any](arreglo []T, funcion_cmp func(T, T) int) ColaPrioridad[T] {
+func CrearHeapArr[T any](arreglo []T, funcion_cmp cmp[T]) ColaPrioridad[T] {
 
 	if len(arreglo) == 0 {
 		return CrearHeap(funcion_cmp)
@@ -36,7 +37,7 @@ func CrearHeapArr[T any](arreglo []T, funcion_cmp func(T, T) int) ColaPrioridad[
 	return h
 }
 
-func HeapSort[T any](elementos []T, funcion_cmp func(T, T) int) {
+func HeapSort[T any](elementos []T, funcion_cmp cmp[T]) {
 	heapify(elementos, funcion_cmp)
 	for i := len(elementos) - 1; i > 0; i-- {
 		swap(elementos, 0, i)
@@ -44,7 +45,7 @@ func HeapSort[T any](elementos []T, funcion_cmp func(T, T) int) {
 	}
 }
 
-func heapify[T any](cola []T, funcion_cmp func(T, T) int) {
+func heapify[T any](cola []T, funcion_cmp cmp[T]) {
 	for i := len(cola)/2 - 1; i >= 0; i-- {
 		downHeap(cola, funcion_cmp, i)
 	}
@@ -66,7 +67,7 @@ func swap[T any](cola []T, i, j int) {
 	cola[i], cola[j] = cola[j], cola[i]
 }
 
-func upHeap[T any](cola []T, cmp func(T, T) int, elem T, pos int) {
+func upHeap[T any](cola []T, cmp cmp[T], elem T, pos int) {
 	posPadre := calcularPosPadre(pos)
 	if cmp(elem, cola[posPadre]) <= 0 {
 		return
@@ -74,7 +75,7 @@ func upHeap[T any](cola []T, cmp func(T, T) int, elem T, pos int) {
 	swap(cola, pos, posPadre)
 	upHeap(cola, cmp, elem, posPadre)
 }
-func downHeap[T any](cola []T, cmp func(T, T) int, pos int) {
+func downHeap[T any](cola []T, cmp cmp[T], pos int) {
 	posHijoIzquierdo := calcularPosHijoIzquierdo(pos)
 	posHijoDerecho := calcularPosHijoDerecho(pos)
 	posMayor := pos

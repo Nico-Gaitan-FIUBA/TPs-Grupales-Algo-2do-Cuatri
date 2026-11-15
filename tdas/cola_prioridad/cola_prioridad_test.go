@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const CANT_VOLUMEN = 100000
+
 func TestColaPrioridadVacia(t *testing.T) {
 	cola := TDAColaPrioridad.CrearHeap(func(a, b int) int {
 		return a - b
@@ -271,15 +273,15 @@ func TestColaPrioridadVolumen(t *testing.T) {
 		return a - b
 	})
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < CANT_VOLUMEN; i++ {
 		cola.Encolar(i)
 	}
 
 	require.False(t, cola.EstaVacia())
-	require.Equal(t, 100000, cola.Cantidad())
-	require.Equal(t, 99999, cola.VerMax())
+	require.Equal(t, CANT_VOLUMEN, cola.Cantidad())
+	require.Equal(t, CANT_VOLUMEN-1, cola.VerMax())
 
-	for i := 99999; i >= 0; i-- {
+	for i := CANT_VOLUMEN - 1; i >= 0; i-- {
 		require.Equal(t, i, cola.Desencolar())
 	}
 	require.True(t, cola.EstaVacia())
@@ -288,8 +290,8 @@ func TestColaPrioridadVolumen(t *testing.T) {
 }
 
 func TestColaPrioridadHeapifyVolumen(t *testing.T) {
-	arr := make([]int, 100000)
-	for i := 0; i < 100000; i++ {
+	arr := make([]int, CANT_VOLUMEN)
+	for i := 0; i < CANT_VOLUMEN; i++ {
 		arr[i] = i
 	}
 	cola := TDAColaPrioridad.CrearHeapArr(arr, func(a, b int) int {
@@ -297,7 +299,7 @@ func TestColaPrioridadHeapifyVolumen(t *testing.T) {
 	})
 
 	require.False(t, cola.EstaVacia())
-	require.Equal(t, 100000, cola.Cantidad())
+	require.Equal(t, CANT_VOLUMEN, cola.Cantidad())
 	require.Equal(t, 99999, cola.VerMax())
 
 	for i := 99999; i >= 0; i-- {
